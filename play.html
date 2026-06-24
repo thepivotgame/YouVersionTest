@@ -1582,8 +1582,7 @@
         renderPool();
         renderGuessDisplay();
         if (guessSlots.length === P.target.length) {
-            const cur = guessSlots.map(sid => pool.find(s => s.id === sid).l).join('');
-            if (cur === P.target) setTimeout(doSubmit, 300);
+            // Word is complete — user must click Enter to submit
         }
     }
 

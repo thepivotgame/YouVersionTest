@@ -731,7 +731,7 @@
                         </svg>
                     </div>
                     <button onclick="openNarration()" style="background:#e8b84b;color:#1a1200;border:2px solid #c49020;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(232,184,75,0.4);">🎧 Listen</button>
-                    <a href="index.html" style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Instructions</a>
+                    <a href="index.html" target="_blank" rel="noopener" style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Instructions</a>
                 </div>
             </div>
         </div>
@@ -2551,10 +2551,11 @@ function narrPuzzleMatch(clean) {
 let narrWordSpans = [], narrAllSpans = [], narrPlaying = false;
 let narrUtterance = null, narrEndTimer = null, narrBuilt = false;
 let narrUserStopped = false; // true when user manually stops — prevents poller misfiring
-let narrOpenCount = 0;    // times modal has been opened
-let narrLastWord  = 0;    // word index to resume from
-let narrCurrentWord = 0;  // tracks current word during playback
-let narrCompleted = false;// true once narration finished end-to-end
+// Persist narration state across page reloads via sessionStorage
+let narrOpenCount   = parseInt(sessionStorage.getItem('narrOpenCount') || '0');
+let narrLastWord    = parseInt(sessionStorage.getItem('narrLastWord')  || '0');
+let narrCurrentWord = 0;
+let narrCompleted   = sessionStorage.getItem('narrCompleted') === 'true';
 
 function openNarration() {
   const overlay = document.getElementById('narr-overlay');
@@ -2562,6 +2563,7 @@ function openNarration() {
   document.body.style.overflow = 'hidden';
   if (!narrBuilt) buildNarration();
   narrOpenCount++;
+  sessionStorage.setItem('narrOpenCount', narrOpenCount);
 
   if (narrOpenCount === 1) {
     // First open — autoplay from beginning
@@ -2581,7 +2583,10 @@ function openNarration() {
 function closeNarration() {
   narrUserStopped = true; // prevent poller misfiring after cancel
   // Record position before stopping (only if not completed — completed resets to 0)
-  if (narrPlaying && !narrCompleted) narrLastWord = narrCurrentWord;
+  if (narrPlaying && !narrCompleted) {
+    narrLastWord = narrCurrentWord;
+    sessionStorage.setItem('narrLastWord', narrLastWord);
+  }
   // Always stop audio immediately
   if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer = null; }
   speechSynthesis.cancel();
@@ -2653,6 +2658,14 @@ function buildNarration() {
     container.appendChild(document.createTextNode(' '));
   });
 
+  // Restore span states if returning mid-listen
+  if (narrLastWord > 0 && !narrCompleted) {
+    narrMarkSpoken(narrLastWord);
+  } else if (narrCompleted) {
+    narrMarkAllSpoken();
+    document.getElementById('narr-votd').style.display = 'block';
+  }
+
   // Build VOTD
   const votdEl = document.getElementById('narr-votd-text');
   votdEl.innerHTML = '';
@@ -2699,6 +2712,8 @@ function narrFinished() {
   narrCompleted = true;
   narrLastWord  = 0;
   narrCurrentWord = 0;
+  sessionStorage.setItem('narrCompleted', 'true');
+  sessionStorage.setItem('narrLastWord', '0');
   document.getElementById('narr-playlabel').textContent = 'Play';
   document.getElementById('narr-playpath').setAttribute('d','M3 2.5l10 5.5-10 5.5z');
   document.getElementById('narr-status').textContent = '';

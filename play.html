@@ -2585,14 +2585,15 @@ function openNarration() {
 }
 
 function closeNarration() {
-  narrUserStopped = true; // prevent poller misfiring after cancel
+  // Kill timer FIRST — before anything else — so poller cannot fire narrFinished
+  if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer = null; }
+  narrUserStopped = true;
   // Record position before stopping (only if not completed — completed resets to 0)
   if (narrPlaying && !narrCompleted) {
     narrLastWord = narrCurrentWord;
     sessionStorage.setItem('narrLastWord', narrLastWord);
   }
-  // Always stop audio immediately
-  if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer = null; }
+  narrPlaying = false; // set false before cancel so poller sees it even if it fires
   speechSynthesis.cancel();
   narrPlaying = false;
   document.getElementById('narr-playlabel').textContent = 'Play';
@@ -2734,10 +2735,11 @@ function narrFinished() {
 }
 
 function narrStop(reset) {
-  narrUserStopped = true; // tell poller not to fire narrFinished
+  // Kill timer first so poller cannot fire narrFinished after cancel
   if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer=null; }
+  narrUserStopped = true;
+  narrPlaying = false; // set false before cancel
   speechSynthesis.cancel();
-  narrPlaying = false;
   document.getElementById('narr-playlabel').textContent = 'Play';
   document.getElementById('narr-playpath').setAttribute('d','M3 2.5l10 5.5-10 5.5z');
   document.getElementById('narr-status').textContent = '';

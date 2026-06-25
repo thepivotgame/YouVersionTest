@@ -1479,6 +1479,8 @@
     function goStage2() {
         stage = 2;
         document.getElementById('hintbtn').style.display = 'none';
+        const s2 = document.getElementById('s2');
+        if (s2) s2.style.display = '';
         const instrCard = document.getElementById('instrcard');
         const instrEl = document.getElementById('instrtext');
         if (instrCard)

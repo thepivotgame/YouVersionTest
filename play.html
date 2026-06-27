@@ -2633,9 +2633,9 @@ function closeNarration() {
 function buildNarration() {
   narrBuilt = true;
 
-  // Passage text from Google Sheet column U (P.passageText)
-  const passageText = (typeof P !== 'undefined' && P.passageText) ? P.passageText
-    : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";
+  // Passage segments — Romans 8:18–25 NIV (static for this puzzle)
+  const passageFull = (typeof P !== 'undefined' && P.passageText) ? P.passageText : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";
+  const segs = [{ v:'', t: passageFull }];
 
   // Try to use VOTD/passage ref from puzzle data if available
   const votdVerse = (typeof P !== 'undefined' && P.votdVerse) ? P.votdVerse
@@ -2646,21 +2646,17 @@ function buildNarration() {
   document.getElementById('narr-ref').textContent = passRef;
   document.getElementById('narr-votd-label').textContent = 'Verse of the Day · ' + votdRef;
 
-  // Build passage DOM from flat passageText string
+  // Build passage DOM
   const container = document.getElementById('narr-passage');
   container.innerHTML = '';
   narrWordSpans = []; narrAllSpans = [];
   let wi = 0;
 
-  // Wrap entire passage as a single segment (no verse numbers — text is flat from sheet)
-  const fakeSegs = [{ v: '', t: passageText }];
-  fakeSegs.forEach(seg => {
-    if (seg.v) {
-      const sup = document.createElement('sup');
-      sup.className = 'nverse-num';
-      sup.textContent = seg.v;
-      container.appendChild(sup);
-    }
+  segs.forEach(seg => {
+    const sup = document.createElement('sup');
+    sup.className = 'nverse-num';
+    sup.textContent = seg.v;
+    container.appendChild(sup);
 
     seg.t.split(' ').forEach((token, i, arr) => {
       const letters = token.replace(/[^a-zA-Z]/g,'');
@@ -2796,8 +2792,7 @@ function narrToggle() {
   narrUserStopped = false; // reset for new playback
   speechSynthesis.cancel();
 
-  const fullText = (typeof P !== 'undefined' && P.passageText) ? P.passageText
-    : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";
+  const fullText = (typeof P !== 'undefined' && P.passageText) ? P.passageText : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";
   const allWords = fullText.split(' ');
 
   // Build resume text: if we stopped partway, skip words already spoken

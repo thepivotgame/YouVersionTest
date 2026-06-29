@@ -1545,7 +1545,13 @@
         // Find the cell that contains the first letter of the word
         const firstLetter = w[0];
         const pivotCells = placements[P.pivot] ? new Set(placements[P.pivot].cells.map(([r,c]) => ck(r,c))) : new Set();
-        const firstCell = p.cells.find(([r, c]) => grid[r][c] === firstLetter && !pivotCells.has(ck(r,c)) && !foundKeys.has(ck(r,c))) || p.cells.find(([r, c]) => grid[r][c] === firstLetter && !foundKeys.has(ck(r,c))) || p.cells.find(([r, c]) => grid[r][c] === firstLetter) || p.cells[0];
+        // Prefer: first letter, not pivot, not found. Then: first letter, not found. Then: any not found. Then: first letter. Then: first cell.
+        const firstCell = p.cells.find(([r, c]) => grid[r][c] === firstLetter && !pivotCells.has(ck(r,c)) && !foundKeys.has(ck(r,c)))
+            || p.cells.find(([r, c]) => grid[r][c] === firstLetter && !foundKeys.has(ck(r,c)))
+            || p.cells.find(([r, c]) => !foundKeys.has(ck(r,c)) && !pivotCells.has(ck(r,c)))
+            || p.cells.find(([r, c]) => !foundKeys.has(ck(r,c)))
+            || p.cells.find(([r, c]) => grid[r][c] === firstLetter)
+            || p.cells[0];
         selCells = [];
         hintKeys = new Set();
         hintKeys.add(ck(firstCell[0], firstCell[1]));

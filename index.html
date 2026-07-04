@@ -11,6 +11,9 @@
     <script>
 (function () {
     try {
+    // Don't auto-skip to play.html if the person explicitly clicked "Instructions"
+    var fromInstructions = new URLSearchParams(window.location.search).get('howto') === '1';
+    if (fromInstructions) return;
     var saved = JSON.parse(localStorage.getItem('pivot_result_votd') || 'null');
     if (saved) {
         window.location.replace('play.html');

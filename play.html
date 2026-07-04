@@ -2699,19 +2699,29 @@
 
 <!-- Narration frame — loads narration.html in the same window, full-screen,
      so it looks and behaves like the old in-page modal. -->
-<div id="narr-frame-wrap" style="display:none;position:fixed;inset:0;z-index:9000;">
+<div id="narr-frame-wrap" style="display:none;position:fixed;inset:0;z-index:9000;background:#000;">
+  <button onclick="closeNarrationFrame()" title="Close" style="position:absolute;top:10px;right:10px;z-index:9001;background:#2e2e5a;border:none;border-radius:50%;width:34px;height:34px;font-size:16px;color:#e8e4d9;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">✕</button>
   <iframe id="narr-frame" src="" style="width:100%;height:100%;border:0;"></iframe>
 </div>
 <script>
+var narrFrameLoaded = false;
 function openNarrationFrame() {
     const wrap = document.getElementById('narr-frame-wrap');
     const frame = document.getElementById('narr-frame');
-    if (!frame.src) frame.src = 'narration.html?embed=1';
+    if (!narrFrameLoaded) {
+        frame.src = 'narration.html?embed=1';
+        narrFrameLoaded = true;
+    }
     wrap.style.display = 'block';
+}
+function closeNarrationFrame() {
+    // Always-available fallback close, in case narration.html fails to load
+    // or doesn't send its close signal for any reason.
+    document.getElementById('narr-frame-wrap').style.display = 'none';
 }
 window.addEventListener('message', function (e) {
     if (e.data === 'narrClose') {
-        document.getElementById('narr-frame-wrap').style.display = 'none';
+        closeNarrationFrame();
     }
 });
 </script>

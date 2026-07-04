@@ -7,13 +7,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>PIVOT</title>
-    <script>
-      // Don't count test-mode plays in GoatCounter analytics.
-      // (?test=true&date=... in the URL = testing, not a real visitor)
-      window.goatcounter = {
-        no_onload: new URLSearchParams(window.location.search).get('test') === 'true'
-      };
-    </script>
     <script data-goatcounter="https://pivot-votd.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
     <style>
     * {
@@ -840,8 +833,8 @@
                             <path d="M9 2 L9 16 M3 11 L9 18 L15 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <button onclick="openNarrationFrame()" style="background:#e8b84b;color:#1a1200;border:2px solid #c49020;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(232,184,75,0.4);">🎧 Listen</button>
-                    <a href="index.html?howto=1" target="_blank" rel="noopener" style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Instructions</a>
+                    <button onclick="openNarration()" style="background:#e8b84b;color:#1a1200;border:2px solid #c49020;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(232,184,75,0.4);">🎧 Listen</button>
+                    <a href="index.html" target="_blank" rel="noopener" style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Instructions</a>
                 </div>
             </div>
         </div>
@@ -988,13 +981,6 @@
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         return y + '-' + m + '-' + day;
-    }
-
-    function isTestMode() {
-        // Same flag as todayISO() — when true, treat every load as a brand-new player:
-        // ignore any saved "already played" result or in-progress state for this date.
-        const params = new URLSearchParams(window.location.search);
-        return params.get('test') === 'true';
     }
 
     function parseCSV(text) {
@@ -2660,14 +2646,6 @@
         }
         if (loadEl) loadEl.style.display = 'none';
 
-        if (isTestMode()) {
-            // TEST MODE: always play as a new player — ignore any saved result or
-            // in-progress state so reloading the same test URL never shows
-            // "already played." (No need to open a private/incognito window.)
-            initGame();
-            return;
-        }
-
         let saved = null;
         try {
             saved = JSON.parse(localStorage.getItem('pivot_result_votd') || 'null');
@@ -2697,36 +2675,344 @@
     window.addEventListener('resize', renderGrid);
     </script>
 
-<!-- Narration frame — loads narration.html in the same window, full-screen,
-     so it looks and behaves like the old in-page modal. -->
-<div id="narr-frame-wrap" style="display:none;position:fixed;inset:0;z-index:9000;background:#000;">
-  <button onclick="closeNarrationFrame()" title="Close" style="position:absolute;top:10px;right:10px;z-index:9001;background:#2e2e5a;border:none;border-radius:50%;width:34px;height:34px;font-size:16px;color:#e8e4d9;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">✕</button>
-  <iframe id="narr-frame" src="" style="width:100%;height:100%;border:0;"></iframe>
+<!-- Narration modal — fixed to viewport, never taller than screen -->
+<div id="narr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px;">
+  <div id="narr-card" style="background:#12122a;border:1px solid #2e2e5a;border-radius:16px;max-width:620px;width:100%;max-height:calc(100vh - 32px);display:flex;flex-direction:column;font-family:Georgia,serif;overflow:hidden;">
+
+    <!-- ── Sticky header: always visible ── -->
+    <div style="flex-shrink:0;padding:1rem 1.25rem 0.75rem;border-bottom:1px solid #2e2e5a;">
+
+      <!-- Row 1: ref label + close button -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+        <p style="font-family:-apple-system,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8884aa;margin:0;" id="narr-ref">Romans 8:18–25 · NIV</p>
+        <button onclick="closeNarration()" style="background:#2e2e5a;border:none;border-radius:50%;width:30px;height:30px;font-size:16px;color:#e8e4d9;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;">✕</button>
+      </div>
+
+      <!-- Row 2: play button + speed -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button id="narr-playbtn" onclick="narrToggle()" style="display:flex;align-items:center;gap:8px;padding:10px 22px;border-radius:9px;border:2px solid #c49020;background:#e8b84b;color:#1a1200;font-family:-apple-system,sans-serif;font-size:15px;font-weight:bold;cursor:pointer;touch-action:manipulation;min-height:44px;box-shadow:0 2px 8px rgba(232,184,75,0.35);">
+          <svg viewBox="0 0 16 16" style="width:16px;height:16px;fill:currentColor;"><path id="narr-playpath" d="M3 2.5l10 5.5-10 5.5z"/></svg>
+          <span id="narr-playlabel">Play</span>
+        </button>
+        <button onclick="narrRestart()" title="Restart from beginning" style="display:flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:9px;border:1px solid #4a4a8a;background:#1e1e40;color:#e8e4d9;font-size:18px;cursor:pointer;touch-action:manipulation;min-height:44px;">⏮</button>
+        <div style="display:flex;align-items:center;gap:8px;font-family:-apple-system,sans-serif;font-size:12px;color:#8884aa;">
+          Speed:
+          <input type="range" min="0.5" max="1.2" step="0.1" value="0.8" id="narr-speed"
+                 oninput="document.getElementById('narr-speedval').textContent=parseFloat(this.value).toFixed(1)+'×'"
+                 style="width:85px;accent-color:#e8b84b;">
+          <span id="narr-speedval" style="color:#e8e4d9;min-width:28px;">0.8×</span>
+        </div>
+        <span id="narr-status" style="font-family:-apple-system,sans-serif;font-size:12px;color:#8884aa;"></span>
+      </div>
+    </div>
+
+    <!-- ── Scrollable body: passage + VOTD ── -->
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.25rem 1.25rem 1.5rem;">
+
+      <div id="narr-passage" style="font-size:17px;line-height:1.85;color:#e8e4d9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"></div>
+
+      <!-- VOTD — revealed after narration ends -->
+      <div id="narr-votd" style="display:none;margin-top:1.5rem;padding:1rem 1.25rem;border-left:3px solid #e8b84b;background:#1a1a38;border-radius:0 8px 8px 0;">
+        <p style="font-family:-apple-system,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8884aa;margin-bottom:0.5rem;" id="narr-votd-label">Verse of the Day</p>
+        <p style="font-size:17px;line-height:1.75;font-weight:bold;color:#ffffff;" id="narr-votd-text"></p>
+      </div>
+
+      <p style="font-family:-apple-system,sans-serif;font-size:11px;color:#55527a;margin-top:1rem;line-height:1.6;">Puzzle words stay bold gold after they pass. The verse of the day appears when the reading ends.</p>
+    </div>
+
+  </div>
 </div>
+
+<style>
+  /* Narration token styles */
+  .ntok { display:inline; padding:1px 1px; border-radius:3px; transition:background 0.08s,color 0.08s; }
+  .ntok.nactive { background:#e8b84b; color:#1a1200; border-radius:4px; }
+  .ntok.nspoken { color:#55527a; }
+  .ntok.npuzzle.nspoken { color:#e8b84b; font-weight:bold; }
+  .ntok.nsuffix.nspoken { color:#55527a; font-weight:bold; }
+  .nverse-num { font-family:-apple-system,sans-serif; font-size:10px; color:#6660aa; vertical-align:super; margin-right:3px; }
+</style>
+
 <script>
-var narrFrameLoaded = false;
-function openNarrationFrame() {
-    const wrap = document.getElementById('narr-frame-wrap');
-    const frame = document.getElementById('narr-frame');
-    if (!narrFrameLoaded) {
-        frame.src = 'narration.html?embed=1';
-        narrFrameLoaded = true;
-    } else {
-        // Frame already loaded once before — tell it to reopen the reading view
-        // (closing it earlier only hid its internal overlay, it didn't reload).
-        try { frame.contentWindow.postMessage('narrOpen', '*'); } catch (e) {}
-    }
-    wrap.style.display = 'block';
+// ── Narration modal ───────────────────────────────────────────────────────────
+
+// Puzzle word roots and their highlight length
+const NARR_PUZZLE = { glory:5, worth:5, groan:5, saved:5, eager:5, hope:4, wait:4 };
+
+function narrPuzzleMatch(clean) {
+  for (const [k,len] of Object.entries(NARR_PUZZLE)) {
+    if (clean === k || clean.startsWith(k)) return { k, len };
+  }
+  return null;
 }
-function closeNarrationFrame() {
-    // Always-available fallback close, in case narration.html fails to load
-    // or doesn't send its close signal for any reason.
-    document.getElementById('narr-frame-wrap').style.display = 'none';
+
+let narrWordSpans = [], narrAllSpans = [], narrPlaying = false;
+let narrUtterance = null, narrEndTimer = null, narrBuilt = false;
+let narrUserStopped = false; // true when user manually stops — prevents poller misfiring
+// Persist narration state across page reloads via sessionStorage
+let narrOpenCount   = parseInt(sessionStorage.getItem('narrOpenCount') || '0');
+let narrLastWord    = parseInt(sessionStorage.getItem('narrLastWord')  || '0');
+let narrCurrentWord = 0;
+let narrCompleted   = sessionStorage.getItem('narrCompleted') === 'true';
+
+function openNarration() {
+  const overlay = document.getElementById('narr-overlay');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  if (!narrBuilt) buildNarration();
+  narrOpenCount++;
+  sessionStorage.setItem('narrOpenCount', narrOpenCount);
+
+
+
+  if (narrCompleted) {
+    // Already finished — show full gold + VOTD, no autoplay
+    narrMarkAllSpoken();
+    document.getElementById('narr-votd').style.display = 'block';
+  } else {
+    // First open or returning mid-listen — autoplay (from beginning or resume point)
+    setTimeout(narrToggle, 200);
+  }
 }
-window.addEventListener('message', function (e) {
-    if (e.data === 'narrClose') {
-        closeNarrationFrame();
+
+function closeNarration() {
+  // Kill timer FIRST — before anything else — so poller cannot fire narrFinished
+  if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer = null; }
+  narrUserStopped = true;
+  // Record position before stopping (only if not completed — completed resets to 0)
+  if (narrPlaying && !narrCompleted) {
+    narrLastWord = narrCurrentWord;
+    sessionStorage.setItem('narrLastWord', narrLastWord);
+  }
+  narrPlaying = false; // set false before cancel so poller sees it even if it fires
+  speechSynthesis.cancel();
+  narrPlaying = false;
+  document.getElementById('narr-playlabel').textContent = 'Play';
+  document.getElementById('narr-playpath').setAttribute('d','M3 2.5l10 5.5-10 5.5z');
+  document.getElementById('narr-status').textContent = '';
+  document.getElementById('narr-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function buildNarration() {
+  narrBuilt = true;
+
+  // Passage segments — Romans 8:18–25 NIV (static for this puzzle)
+  const passageFull = (typeof P !== 'undefined' && P.passageText) ? P.passageText : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";
+  const segs = [{ v:'', t: passageFull }];
+
+  // Try to use VOTD/passage ref from puzzle data if available
+  const votdVerse = (typeof P !== 'undefined' && P.votdVerse) ? P.votdVerse
+    : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us.";
+  const votdRef  = (typeof P !== 'undefined' && P.votdRef)   ? P.votdRef   : "Romans 8:18";
+  const passRef  = (typeof P !== 'undefined' && P.passRef)   ? P.passRef   : "Romans 8:18–25 · NIV";
+
+  document.getElementById('narr-ref').textContent = passRef;
+  document.getElementById('narr-votd-label').textContent = 'Verse of the Day · ' + votdRef;
+
+  // Build passage DOM
+  const container = document.getElementById('narr-passage');
+  container.innerHTML = '';
+  narrWordSpans = []; narrAllSpans = [];
+  let wi = 0;
+
+  segs.forEach(seg => {
+    const sup = document.createElement('sup');
+    sup.className = 'nverse-num';
+    sup.textContent = seg.v;
+    container.appendChild(sup);
+
+    seg.t.split(' ').forEach((token, i, arr) => {
+      const letters = token.replace(/[^a-zA-Z]/g,'');
+      const punct   = token.slice(letters.length);
+      const clean   = letters.toLowerCase();
+      const m       = narrPuzzleMatch(clean);
+
+      if (m && letters.length > m.len) {
+        const s1 = document.createElement('span');
+        s1.className = 'ntok npuzzle'; s1.textContent = letters.slice(0,m.len); s1.id='nw'+wi;
+        container.appendChild(s1); narrWordSpans.push(s1); narrAllSpans.push(s1);
+        const s2 = document.createElement('span');
+        s2.className = 'ntok nsuffix'; s2.textContent = letters.slice(m.len)+punct;
+        container.appendChild(s2); narrAllSpans.push(s2);
+      } else {
+        const s = document.createElement('span');
+        s.className = 'ntok' + (m ? ' npuzzle' : ''); s.textContent = token; s.id='nw'+wi;
+        container.appendChild(s); narrWordSpans.push(s); narrAllSpans.push(s);
+      }
+      wi++;
+      if (i < arr.length-1) container.appendChild(document.createTextNode(' '));
+    });
+    container.appendChild(document.createTextNode(' '));
+  });
+
+  // Restore span states if returning mid-listen
+  if (narrLastWord > 0 && !narrCompleted) {
+    narrMarkSpoken(narrLastWord);
+  } else if (narrCompleted) {
+    narrMarkAllSpoken();
+    document.getElementById('narr-votd').style.display = 'block';
+  }
+
+  // Build VOTD
+  const votdEl = document.getElementById('narr-votd-text');
+  votdEl.innerHTML = '';
+  votdVerse.split(' ').forEach((tok, i, arr) => {
+    const clean = tok.replace(/[^a-zA-Z]/g,'').toLowerCase();
+    const m = narrPuzzleMatch(clean);
+    const s = document.createElement('span');
+    if (m) s.style.color = '#e8b84b';
+    s.textContent = tok;
+    votdEl.appendChild(s);
+    if (i < arr.length-1) votdEl.appendChild(document.createTextNode(' '));
+  });
+}
+
+function narrSpansForWord(wi) {
+  const fi = narrAllSpans.indexOf(narrWordSpans[wi]);
+  const ni = wi+1 < narrWordSpans.length ? narrAllSpans.indexOf(narrWordSpans[wi+1]) : narrAllSpans.length;
+  return narrAllSpans.slice(fi, ni);
+}
+
+function narrMarkSpoken(cur) {
+  narrCurrentWord = cur;
+  narrWordSpans.forEach((_,wi) => {
+    const spans = narrSpansForWord(wi);
+    if (wi < cur)      spans.forEach(s=>{s.classList.remove('nactive');s.classList.add('nspoken');});
+    else if (wi===cur) spans.forEach(s=>{s.classList.remove('nspoken');s.classList.add('nactive');});
+    else               spans.forEach(s=>s.classList.remove('nactive','nspoken'));
+  });
+}
+
+function narrMarkAllSpoken() {
+  narrAllSpans.forEach(s=>{s.classList.remove('nactive');s.classList.add('nspoken');});
+}
+
+function narrReset() {
+  narrAllSpans.forEach(s=>s.classList.remove('nactive','nspoken'));
+  document.getElementById('narr-votd').style.display = 'none';
+}
+
+function narrFinished() {
+  if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer=null; }
+  if (!narrPlaying) return;
+  narrPlaying = false;
+  narrCompleted = true;
+  narrLastWord  = 0;
+  narrCurrentWord = 0;
+  sessionStorage.setItem('narrCompleted', 'true');
+  sessionStorage.setItem('narrLastWord', '0');
+  document.getElementById('narr-playlabel').textContent = 'Play';
+  document.getElementById('narr-playpath').setAttribute('d','M3 2.5l10 5.5-10 5.5z');
+  document.getElementById('narr-status').textContent = '';
+  narrMarkAllSpoken();
+  // Record completion in localStorage (keyed to today's date)
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    localStorage.setItem('pivot_narr_listened_votd', JSON.stringify({ date: today, completed: true }));
+  } catch(e) {}
+  // Reveal VOTD
+  const votdBlock = document.getElementById('narr-votd');
+  votdBlock.style.display = 'block';
+  setTimeout(() => votdBlock.scrollIntoView({ behavior:'smooth', block:'nearest' }), 100);
+}
+
+function narrStop(reset) {
+  // Kill timer first so poller cannot fire narrFinished after cancel
+  if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer=null; }
+  narrUserStopped = true;
+  narrPlaying = false; // set false before cancel
+  speechSynthesis.cancel();
+  document.getElementById('narr-playlabel').textContent = 'Play';
+  document.getElementById('narr-playpath').setAttribute('d','M3 2.5l10 5.5-10 5.5z');
+  document.getElementById('narr-status').textContent = '';
+  if (reset) narrReset();
+}
+
+function narrRestart() {
+  // Stop current playback, reset everything, scroll to top, autoplay from start
+  if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer = null; }
+  narrUserStopped = true;
+  narrPlaying = false;
+  speechSynthesis.cancel();
+  narrLastWord    = 0;
+  narrCurrentWord = 0;
+  narrCompleted   = false;
+  sessionStorage.setItem('narrLastWord', '0');
+  sessionStorage.removeItem('narrCompleted');
+  narrReset();
+  // Scroll passage to top
+  const passage = document.getElementById('narr-passage');
+  if (passage) passage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Autoplay after scroll settles
+  setTimeout(() => {
+    narrUserStopped = false;
+    narrToggle();
+  }, 400);
+}
+
+function narrToggle() {
+  if (narrPlaying) { narrStop(false); return; }  // Stop but keep highlights
+  narrUserStopped = false; // reset for new playback
+  speechSynthesis.cancel();
+
+  const fullText = (typeof P !== 'undefined' && P.passageText) ? P.passageText : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";
+  const allWords = fullText.split(' ');
+
+  // Build resume text: if we stopped partway, skip words already spoken
+  let resumeFrom = narrLastWord; // word index to resume from
+  let charOffset  = 0;
+  if (resumeFrom > 0 && !narrCompleted) {
+    for (let i = 0; i < resumeFrom; i++) charOffset += allWords[i].length + 1;
+  } else {
+    resumeFrom = 0;
+    charOffset = 0;
+    narrReset(); // fresh start
+  }
+
+  const resumeText = fullText.slice(charOffset);
+
+  narrUtterance = new SpeechSynthesisUtterance(resumeText);
+  narrUtterance.rate = parseFloat(document.getElementById('narr-speed').value);
+
+  const voices = speechSynthesis.getVoices();
+  narrUtterance.voice = voices.find(v => v.lang.startsWith('en') && v.localService)
+  || voices.find(v => v.lang.startsWith('en'))
+  || voices[0];
+
+  // resumeText word list for boundary mapping
+  const resumeWords = resumeText.split(' ');
+
+  narrUtterance.onboundary = function(e) {
+    if (e.name!=='word') return;
+    let cum=0, foundLocal=resumeWords.length-1;
+    for (let i=0;i<resumeWords.length;i++) {
+      if (cum===e.charIndex){foundLocal=i;break;}
+      if (cum>e.charIndex){foundLocal=Math.max(0,i-1);break;}
+      cum+=resumeWords[i].length+1;
     }
+    const globalIdx = resumeFrom + foundLocal;
+    narrMarkSpoken(globalIdx);
+    const el=document.getElementById('nw'+globalIdx);
+    if (el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+
+  narrUtterance.onend   = narrFinished;
+  narrUtterance.onerror = narrFinished;
+
+  narrPlaying = true;
+  document.getElementById('narr-playlabel').textContent = 'Stop';
+  document.getElementById('narr-playpath').setAttribute('d','M3 2h3.5v12H3zm6.5 0H13v12H9.5z');
+  document.getElementById('narr-status').textContent = resumeFrom > 0 ? 'Resuming…' : 'Playing…';
+  speechSynthesis.speak(narrUtterance);
+
+  // Safari onend fallback
+  narrEndTimer = setInterval(()=>{ if (!speechSynthesis.speaking && narrPlaying && !narrUserStopped) narrFinished(); }, 300);
+}
+
+// Close on overlay background tap
+document.getElementById('narr-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeNarration();
 });
 </script>
 

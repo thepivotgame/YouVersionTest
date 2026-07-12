@@ -834,7 +834,7 @@
                         </svg>
                     </div>
                     <button onclick="openNarration()" style="background:#e8b84b;color:#1a1200;border:2px solid #c49020;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(232,184,75,0.4);">🎧 Listen</button>
-                    <a href="index.html"  style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Instructions</a>
+                    <a href="index.html" target="_blank" rel="noopener" style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Instructions</a>
                 </div>
             </div>
         </div>
@@ -2398,7 +2398,7 @@
             performanceLine = 'Phew! I made it!! \n😅';
         }
         const perfSuffix = performanceLine ? '\n' + performanceLine : '';
-        return 'PIVOT: Verse of the Day\n' + P.votdRef + perfSuffix + '\n' + p1Emoji + '\n' + guessEmoji  + '\nhttps://tinyurl.com/pivot-en';
+        return 'PIVOT: Verse of the Day\n' + P.votdRef + perfSuffix + '\n' + p1Emoji + '\n' + guessEmoji  + '\nhttps://tinyurl.com/YouVersionTest';
         
     }
     function showSharePrompt() {
@@ -2736,8 +2736,8 @@
 <script>
 // ── Narration modal ───────────────────────────────────────────────────────────
 
-
-    
+// Puzzle word roots and their highlight length
+const NARR_PUZZLE = { glory:5, worth:5, groan:5, saved:5, eager:5, hope:4, wait:4 };
 
 function narrPuzzleMatch(clean) {
   for (const [k,len] of Object.entries(NARR_PUZZLE)) {
@@ -2748,7 +2748,6 @@ function narrPuzzleMatch(clean) {
 
 let narrWordSpans = [], narrAllSpans = [], narrPlaying = false;
 let narrUtterance = null, narrEndTimer = null, narrBuilt = false;
-let NARR_PUZZLE = {};
 let narrUserStopped = false; // true when user manually stops — prevents poller misfiring
 // Persist narration state across page reloads via sessionStorage
 let narrOpenCount   = parseInt(sessionStorage.getItem('narrOpenCount') || '0');
@@ -2795,18 +2794,9 @@ function closeNarration() {
   document.body.style.overflow = '';
 }
 
-
 function buildNarration() {
   narrBuilt = true;
 
-  // Build the highlight word list from today's actual puzzle words
-NARR_PUZZLE = {};
-  if (typeof P !== 'undefined' && Array.isArray(P.words)) {
-    P.words.forEach(w => {
-      NARR_PUZZLE[w.toLowerCase()] = w.length;
-    });
-  }
-    
   // Passage segments — Romans 8:18–25 NIV (static for this puzzle)
   const passageFull = (typeof P !== 'undefined' && P.passageText) ? P.passageText : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";
   const segs = [{ v:'', t: passageFull }];
@@ -2931,11 +2921,6 @@ function narrStop(reset) {
   // Kill timer first so poller cannot fire narrFinished after cancel
   if (narrEndTimer) { clearInterval(narrEndTimer); narrEndTimer=null; }
   narrUserStopped = true;
-  // Save position before stopping (only if not completed)
-  if (!narrCompleted) {
-    narrLastWord = narrCurrentWord;
-    sessionStorage.setItem('narrLastWord', narrLastWord);
-  }
   narrPlaying = false; // set false before cancel
   speechSynthesis.cancel();
   document.getElementById('narr-playlabel').textContent = 'Play';

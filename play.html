@@ -810,6 +810,15 @@
     <div id="loading-msg" style="text-align:center;padding:40px 20px;color:#a8c8e8;font-family:Georgia,serif;font-size:16px;letter-spacing:1px;">
         Loading today's puzzle…
     </div>
+    <div id="no-puzzle-msg" style="display:none;text-align:center;padding:40px 24px;font-family:Georgia,serif;">
+        <p style="color:#f0ede6;font-size:16px;line-height:1.6;margin:0 0 18px;">
+            No puzzle is loaded for today's date.
+        </p>
+        <p style="color:#a8c8e8;font-size:13px;line-height:1.6;margin:0 0 20px;">
+            If you've received this message in error, please let us know.
+        </p>
+        <a id="no-puzzle-contact-btn" href="#" style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:11px 18px;font-size:13px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Send us a message</a>
+    </div>
     <div id="flash"></div>
 
     <div id="s1" style="display:none">
@@ -947,20 +956,9 @@
 
     // ── PUZZLE ───────────────────────────────────────────────────────────────────
     // P is populated from Google Sheets at runtime by loadAndStart() below.
-    // The fallback below is only used if the fetch fails.
-    const FALLBACK_P = {
-        theme: "GLORY",
-        words: ["GLORY", "WORTH", "GROAN", "DECAY", "EAGER", "HOPE", "WAIT"],
-        SIZE: 6,
-        target: "HONOR",
-        pivot: "GLORY",
-        noise: "AEIOBRCTNS",
-        latHint: "Seven words from Romans 8 — Paul's picture of a creation suffering, waiting, and longing for what's coming.",
-        pivHint: "Paul uses this word for God's ultimate reveal — but it's also what the world gives its celebrities and champions. What do we call that?",
-        winText: "GLORY was the pivot. In Romans 8 it means the divine splendour God will reveal in us. But glory also means the honour the world hands out. Paul says one is worth infinitely more.",
-        lossText: "The pivot was GLORY — Paul's word for what God will reveal in us. But glory also means the honour the world gives its champions. The target was HONOR.",
-        gridString: "EAGEROWYACEDAORNIEIGROANTSTTLANEPOHG",
-    };
+    // If the fetch fails, or there's no row for today's date, P stays null and
+    // loadAndStart() shows the "no puzzle loaded" message instead of starting a
+    // game with missing data.
     let P = null;
 
     // ── GOOGLE SHEETS FETCH ──────────────────────────────────────────────────────
@@ -2611,10 +2609,10 @@
         }
 
         const themeLabel = document.getElementById('theme-label');
-        if (themeLabel) themeLabel.textContent = P.votdRef || P.theme;
+        if (themeLabel) themeLabel.textContent = (P && (P.votdRef || P.theme)) || "Today's Puzzle";
         const votdBanner = document.getElementById('votd-banner');
         const votdBannerText = document.getElementById('votd-banner-text');
-        if (votdBanner && votdBannerText && P.votdVerse) {
+        if (votdBanner && votdBannerText && P && P.votdVerse) {
           votdBannerText.textContent = P.votdVerse;
           votdBanner.style.display = 'block';
         }
@@ -2638,11 +2636,14 @@
 
     async function loadAndStart() {
         const loadEl = document.getElementById('loading-msg');
+        const noPuzzleEl = document.getElementById('no-puzzle-msg');
+        let sheetLoadFailed = false;
         try {
             P = await fetchTodayPuzzle();
         } catch (err) {
-            console.warn('Sheets fetch failed, using fallback puzzle.', err);
-            P = FALLBACK_P;
+            console.warn('Sheets fetch failed or no puzzle found for today.', err);
+            sheetLoadFailed = true;
+            P = null;
         }
         if (loadEl) loadEl.style.display = 'none';
 
@@ -2652,18 +2653,39 @@
         } catch (e) {
             saved = null;
         }
+
+        // If today's puzzle already has a completed result saved, show that
+        // recap regardless of whether the sheet loaded just now — showAlreadyPlayed()
+        // is written to cope with P being unavailable.
         if (saved && saved.date === todayISO()) {
             showAlreadyPlayed(saved);
-        } else {
-            let progress = null;
-            try {
-                progress = JSON.parse(localStorage.getItem('pivot_progress_votd') || 'null');
-            } catch (e) { progress = null; }
-            if (progress && progress.date === todayISO()) {
-                restoreProgress(progress);
-            } else {
-                initGame();
+            return;
+        }
+
+        if (sheetLoadFailed) {
+            // No real puzzle data and nothing completed to redisplay — rather than
+            // starting or resuming a game with missing data, tell the visitor
+            // plainly and offer a way to flag it.
+            if (noPuzzleEl) {
+                const contactBtn = document.getElementById('no-puzzle-contact-btn');
+                if (contactBtn) {
+                    const subject = encodeURIComponent('PIVOT — no puzzle loaded for ' + todayISO());
+                    const body = encodeURIComponent('I saw the "no puzzle loaded" message on PIVOT for ' + todayISO() + '.');
+                    contactBtn.href = 'mailto:info@godforworkandlife.org?subject=' + subject + '&body=' + body;
+                }
+                noPuzzleEl.style.display = 'block';
             }
+            return;
+        }
+
+        let progress = null;
+        try {
+            progress = JSON.parse(localStorage.getItem('pivot_progress_votd') || 'null');
+        } catch (e) { progress = null; }
+        if (progress && progress.date === todayISO()) {
+            restoreProgress(progress);
+        } else {
+            initGame();
         }
     }
 
@@ -2736,8 +2758,11 @@
 <script>
 // ── Narration modal ───────────────────────────────────────────────────────────
 
-// Puzzle word roots and their highlight length
-const NARR_PUZZLE = { glory:5, worth:5, groan:5, saved:5, eager:5, hope:4, wait:4 };
+// Puzzle word roots and their highlight length.
+// This used to be a hardcoded const (Romans 8 words only), which meant it silently
+// went stale on every other day's puzzle. It's now rebuilt from the real P.words
+// inside buildNarration() — see there — which runs after P has loaded.
+let NARR_PUZZLE = { glory:5, worth:5, groan:5, saved:5, eager:5, hope:4, wait:4 };
 
 function narrPuzzleMatch(clean) {
   for (const [k,len] of Object.entries(NARR_PUZZLE)) {
@@ -2796,6 +2821,11 @@ function closeNarration() {
 
 function buildNarration() {
   narrBuilt = true;
+
+  // Rebuild the puzzle-word highlight list from today's actual search words.
+  if (typeof P !== 'undefined' && P.words && P.words.length) {
+    NARR_PUZZLE = Object.fromEntries(P.words.map(w => [w.toLowerCase(), w.length]));
+  }
 
   // Passage segments — Romans 8:18–25 NIV (static for this puzzle)
   const passageFull = (typeof P !== 'undefined' && P.passageText) ? P.passageText : "I consider that our present sufferings are not worth comparing with the glory that will be revealed in us. For the creation waits in eager expectation for the children of God to be revealed. For the creation was subjected to frustration, not by its own choice, but by the will of the one who subjected it, in hope that the creation itself will be liberated from its bondage to decay and brought into the freedom and glory of the children of God. We know that the whole creation has been groaning as in the pains of childbirth right up to the present time. Not only so, but we ourselves, who have the firstfruits of the Spirit, groan inwardly as we wait eagerly for our adoption to sonship, the redemption of our bodies. For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.";

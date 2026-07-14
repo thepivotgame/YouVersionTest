@@ -1451,6 +1451,7 @@
                 hintKeys = new Set();
                 renderGrid();
                 document.getElementById('hintbtn').style.display = 'none';
+                saveProgress(); // re-save now that wordSearchDone/s2Initialised/jumpedEarly are set
                 setTimeout(goStage2, 900);
                 return;
             }
@@ -1458,7 +1459,6 @@
                 // Pivot found. Search stays open — the player always gets the
                 // classic (keep searching) / advanced (lock now) choice in the modal,
                 // regardless of how many words remain.
-                saveProgress();
                 document.getElementById('scroll-down-arrow').style.display = 'flex';
                 setTimeout(showPivotModal, 600);
                 // Always initialise s2 when pivot is found
@@ -1467,6 +1467,7 @@
                     s2Initialised = true;
                     setTimeout(goStage2, 700);
                 }
+                saveProgress(); // save AFTER flags are set, so a reload mid-timeout still restores Part 2
             }
             return;
         }

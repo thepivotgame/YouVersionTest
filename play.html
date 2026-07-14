@@ -2684,6 +2684,15 @@
     </script>
 
 <!-- Narration modal — fixed to viewport, never taller than screen -->
+<div id="narr-voice-notice" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9100;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#12122a;border:1px solid #2e2e5a;border-radius:16px;max-width:420px;width:100%;padding:1.5rem 1.5rem 1.25rem;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-align:center;">
+    <p style="font-size:15px;line-height:1.6;color:#e8e4d9;margin-bottom:1.25rem;">
+      Quick note: this passage is read using your device's built-in voice. We're working on a more natural narration voice soon — thanks for your patience!
+    </p>
+    <button onclick="dismissNarrVoiceNotice()" style="padding:10px 28px;border-radius:9px;border:2px solid #c49020;background:#e8b84b;color:#1a1200;font-size:15px;font-weight:bold;cursor:pointer;touch-action:manipulation;min-height:44px;box-shadow:0 2px 8px rgba(232,184,75,0.35);">Got it</button>
+  </div>
+</div>
+
 <div id="narr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px;">
   <div id="narr-card" style="background:#12122a;border:1px solid #2e2e5a;border-radius:16px;max-width:620px;width:100%;max-height:calc(100vh - 32px);display:flex;flex-direction:column;font-family:Georgia,serif;overflow:hidden;">
 
@@ -2767,6 +2776,23 @@ let narrCurrentWord = 0;
 let narrCompleted   = sessionStorage.getItem('narrCompleted') === 'true';
 
 function openNarration() {
+  // First-ever "Listen" click on this device: show a one-time notice about
+  // the current browser-voice narration before the narration card itself.
+  if (localStorage.getItem('pivot_narr_notice_seen_votd') !== 'true') {
+    document.getElementById('narr-voice-notice').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    return;
+  }
+  _openNarrationCard();
+}
+
+function dismissNarrVoiceNotice() {
+  localStorage.setItem('pivot_narr_notice_seen_votd', 'true');
+  document.getElementById('narr-voice-notice').style.display = 'none';
+  _openNarrationCard();
+}
+
+function _openNarrationCard() {
   const overlay = document.getElementById('narr-overlay');
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';

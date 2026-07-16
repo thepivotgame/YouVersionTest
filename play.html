@@ -291,6 +291,16 @@
         background: rgba(52, 152, 219, 0.8);
     }
 
+    .btn-2line {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        line-height: 1.25;
+        height: 54px;
+        gap: 0;
+    }
+
     .bx {
         background: rgba(231, 76, 60, 0.75);
     }/* Pool */
@@ -678,20 +688,68 @@
         color: #8884aa;
         margin-bottom: 5px;
     }
-    #summarybox .sum-closebtn {
-        display: block;
+    #summarybox .sum-btn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         width: 100%;
-        margin-top: 16px;
-        padding: 14px;
-        background: #e8b84b;
-        color: #1a1200;
-        font-size: 16px;
-        font-weight: bold;
+        margin-top: 10px;
+        padding: 10px 14px;
         border: none;
         border-radius: 10px;
         cursor: pointer;
         touch-action: manipulation;
+        text-align: left;
+        text-decoration: none;
+        box-sizing: border-box;
+        font-family: inherit;
     }
+    #summarybox .sum-btn-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #summarybox .sum-btn-icon img {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        display: block;
+    }
+    #summarybox .sum-btn-label {
+        display: flex;
+        flex-direction: column;
+    }
+    #summarybox .sum-btn-title {
+        font-size: 15px;
+        font-weight: 500;
+    }
+    #summarybox .sum-btn-subtitle {
+        font-size: 13px;
+    }
+    #summarybox .sum-btn-share {
+        background: #e8b84b;
+        color: #1a1200;
+    }
+    #summarybox .sum-btn-share:hover { background: #f0c563; }
+    #summarybox .sum-btn-votd {
+        background: #8a4a2e;
+        color: #ffe9c7;
+    }
+    #summarybox .sum-btn-votd:hover { background: #a05938; }
+    #summarybox .sum-btn-devo {
+        background: #2f7d4f;
+        color: #eafbf0;
+    }
+    #summarybox .sum-btn-devo:hover { background: #37934f; }
+    #summarybox .sum-btn-feedback {
+        background: #2e6a5e;
+        color: #e8f5f0;
+    }
+    #summarybox .sum-btn-feedback:hover { background: #37806f; }
     #summarybox .sum-notnow {
         text-align: center;
         margin-top: 12px;
@@ -702,12 +760,41 @@
         touch-action: manipulation;
     }
     #summarybox .sum-notnow:hover { color: #a0a0c0; }
+    #sum-toast {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.95);
+        background: #ffffff;
+        color: #1a1a2e;
+        border: 1px solid #dcdce6;
+        border-radius: 14px;
+        padding: 24px 22px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.4;
+        box-shadow: 0 10px 34px rgba(0,0,0,0.4);
+        z-index: 2200;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        width: 240px;
+        max-width: calc(100vw - 48px);
+        text-align: center;
+        box-sizing: border-box;
+    }
+    #sum-toast.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
 
     /* Share */
     #shareoverlay {
         position: fixed;
         inset: 0;
-        z-index: 2001;
+        z-index: 2150;
         background: rgba(0, 0, 0, 0.7);
         display: none;
         align-items: center;
@@ -724,7 +811,7 @@
         width: 100%;
         text-align: center;
         position: relative;
-        z-index: 2002;
+        z-index: 2151;
     }
 
     #sharebox h3 {
@@ -833,18 +920,26 @@
                 <span id="fc">(0/7)</span>
             </p>
             <div id="word-chips"></div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
-                <button class="btn bh" id="hintbtn">Get Hint</button>
-                <div style="flex:1;display:flex;justify-content:flex-end;gap:10px;align-items:center;">
-                    <div id="scroll-down-arrow" style="display:none;align-items:center;justify-content:center;gap:8px;cursor:pointer;touch-action:manipulation;background:#e8734a;border-radius:9px;padding:9px 13px;min-height:42px;font-family:Georgia,serif;" onclick="document.getElementById('s2').scrollIntoView({behavior:'smooth',block:'start'})">
-                        <span style="font-size:12px;color:#fff;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">Part 2</span>
-                        <svg width="18" height="22" viewBox="0 0 18 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:bounceDown 1.2s ease-in-out infinite;flex-shrink:0;">
-                            <path d="M9 2 L9 16 M3 11 L9 18 L15 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <button onclick="openNarration()" style="background:#e8b84b;color:#1a1200;border:2px solid #c49020;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(232,184,75,0.4);">🎧 Listen</button>
-                    <a href="index.html"  rel="noopener" style="background:#f9d976;color:#0d3349;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;min-height:42px;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:inline-flex;align-items:center;">Instructions</a>
+            <div style="display:flex;align-items:stretch;gap:10px;margin-top:6px;flex-wrap:nowrap;">
+                <button class="btn bh btn-2line" id="hintbtn">
+                    <span>Get</span><span>Hint</span>
+                </button>
+                <div id="scroll-down-arrow" style="display:none;align-items:center;justify-content:center;gap:8px;cursor:pointer;touch-action:manipulation;background:#e8734a;border-radius:9px;padding:8px 13px;height:54px;font-family:Georgia,serif;box-sizing:border-box;" onclick="document.getElementById('s2').scrollIntoView({behavior:'smooth',block:'start'})">
+                    <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.25;">
+                        <span style="font-size:12px;color:#fff;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">Part</span>
+                        <span style="font-size:12px;color:#fff;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">2</span>
+                    </span>
+                    <svg width="18" height="22" viewBox="0 0 18 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:bounceDown 1.2s ease-in-out infinite;flex-shrink:0;">
+                        <path d="M9 2 L9 16 M3 11 L9 18 L15 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </div>
+                <button onclick="openNarration()" style="background:#e8b84b;color:#1a1200;border:2px solid #c49020;border-radius:9px;padding:8px 13px;height:54px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;font-family:Georgia,serif;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 6px rgba(232,184,75,0.4);box-sizing:border-box;">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1a1200" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M18.36 5.64a9 9 0 0 1 0 12.72"/></svg>
+                    Listen
+                </button>
+                <a href="index.html" rel="noopener" style="background:#2f7d4f;color:#eafbf0;border:none;border-radius:9px;padding:8px 13px;height:54px;font-size:12px;font-weight:bold;letter-spacing:1px;cursor:pointer;font-family:Georgia,serif;touch-action:manipulation;text-decoration:none;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.25;gap:0;box-sizing:border-box;">
+                    <span>Get</span><span>Help</span>
+                </a>
             </div>
         </div>
     </div>
@@ -897,23 +992,45 @@
             <div class="sum-success" id="sum-heading">SUCCESS!</div>
             <div class="sum-target-label">Today's word was</div>
             <div class="sum-target" id="sum-target"></div>
-            <div class="sum-intro">Here is a summary:</div>
-            <div class="sum-section" id="sum-hint1-block">
-                <div class="sum-label">🔀 Lateral hint</div>
-                <div id="sum-hint1-text"></div>
-            </div>
-            <div class="sum-section" id="sum-hint2-block">
-                <div class="sum-label">🪸 Pivot hint</div>
-                <div id="sum-hint2-text"></div>
-            </div>
             <div class="sum-section">
                 <div class="sum-label">💡 The connection</div>
                 <div id="sum-wintext"></div>
             </div>
-            <button class="sum-closebtn" id="sum-closebtn">Share my result →</button>
+            <a class="sum-btn sum-btn-devo" id="sum-devo-btn" href="https://www.bible.com/verse-of-the-day" target="_blank" rel="noopener">
+                <span class="sum-btn-icon"><img src="assets/youversion-icon.png" alt=""></span>
+                <span class="sum-btn-label">
+                    <span class="sum-btn-title">Read today's devotional</span>
+                    <span class="sum-btn-subtitle" id="sum-devo-ref"></span>
+                </span>
+            </a>
+            <button class="sum-btn sum-btn-share" id="sum-closebtn">
+                <span class="sum-btn-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1200" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </span>
+                <span class="sum-btn-label">
+                    <span class="sum-btn-title">Share my result via</span>
+                    <span class="sum-btn-subtitle">WhatsApp &middot; Email &middot; Other</span>
+                </span>
+            </button>
+            <a class="sum-btn sum-btn-votd" id="sum-votd-btn" href="https://www.bible.com/verse-of-the-day" target="_blank" rel="noopener">
+                <span class="sum-btn-icon"><img src="assets/youversion-icon.png" alt=""></span>
+                <span class="sum-btn-label">
+                    <span class="sum-btn-title">Share my result via</span>
+                    <span class="sum-btn-subtitle">YouVersion Verse of the Day</span>
+                </span>
+            </a>
+            <a class="sum-btn sum-btn-feedback" id="sum-feedback-btn" href="#">
+                <span class="sum-btn-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e8f5f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </span>
+                <span class="sum-btn-label">
+                    <span class="sum-btn-title">Give feedback</span>
+                </span>
+            </a>
             <div class="sum-notnow" id="sum-notnow">not now</div>
         </div>
     </div>
+    <div id="sum-toast" role="status" aria-live="polite"></div>
 
     <div id="shareoverlay">
         <div id="sharebox">
@@ -922,7 +1039,7 @@
             <button class="share-btn share-wa" id="sharebtn-wa">📱 WhatsApp</button>
             <button class="share-btn share-em" id="sharebtn-em">✉️ Email</button>
             <button class="share-btn share-cp" id="sharebtn-cp">📋 Copy to clipboard</button>
-            <button class="share-btn share-cl" id="sharebtn-cl">Not now</button>
+            <button class="share-btn share-cl" id="sharebtn-cl">Close</button>
         </div>
     </div>
     <div id="modal-overlay">
@@ -2315,14 +2432,22 @@
         heading.textContent = won ? 'SUCCESS!' : 'Almost, but not quite...';
         heading.classList.toggle('sum-loss', !won);
         document.getElementById('sum-target').textContent = P.target;
-        document.getElementById('sum-hint1-text').textContent = P.latHint;
-        document.getElementById('sum-hint2-text').textContent = P.pivHint;
         document.getElementById('sum-wintext').textContent = won ? P.winText : P.lossText;
+        const devoRef = document.getElementById('sum-devo-ref');
+        if (devoRef) {
+            devoRef.textContent = P.votdRef;
+        }
+        const feedbackBtn = document.getElementById('sum-feedback-btn');
+        if (feedbackBtn) {
+            const fbSubject = encodeURIComponent('PIVOT feedback — ' + todayISO());
+            const fbBody = encodeURIComponent('Puzzle: ' + P.votdRef + '\n\n');
+            feedbackBtn.href = 'mailto:info@godforworkandlife.org?subject=' + fbSubject + '&body=' + fbBody;
+        }
         document.getElementById('summaryoverlay').style.display = 'flex';
     }
 
     // ── SHARE ─────────────────────────────────────────────────────────────────────
-    function buildShareText() {
+    function buildResultParts() {
         // Part 1: one continuous line — circles in order found, with an ℹ️
         // inserted right where each hint was taken, magnifying glass for any
         // words never found tacked onto the end.
@@ -2361,27 +2486,34 @@
         if (p2PendingHint) p2Lines.push('ℹ️'); // hint taken after the last guess (shouldn't normally happen, but don't drop it)
         const guessEmoji = p2Lines.join('\n');
 
-
         const hints = totalHintsUsed();
-        const p2Guesses = p2EventLog.filter(e => e.type === 'guess').length;
-        let performanceLine = '';
+        let hintsLine;
         if (hints === 0) {
-            performanceLine = 'No hints used. 😇 😇 😇';
+            hintsLine = 'BIBLE PIVOT: No hints used 😇 😇 😇';
         } else if (hints === 1) {
-            performanceLine = 'Only 1 hint used. 😇 😇';
+            hintsLine = 'BIBLE PIVOT: 1 hint used 😇 😇';
         } else if (hints === 2) {
-            performanceLine = 'Just 2 hints used. 😇';
-        } else if (hints === 3 ) {
-            performanceLine = 'Phew! I made it with 3 hints!! 😅';
-        } else if (hints > 3) {
-            performanceLine = 'Oh-oh.. ' + hints + ' hints used, but I finished! 🙏';
+            hintsLine = 'BIBLE PIVOT: 2 hints used 😇';
+        } else if (hints === 3) {
+            hintsLine = 'BIBLE PIVOT: 3 hints used 😅';
+        } else {
+            hintsLine = 'BIBLE PIVOT: ' + hints + ' hints used 🙏';
         }
-        const perfSuffix = performanceLine ? '\n' + performanceLine : '';
-        return 'PIVOT: ' + P.votdRef + perfSuffix + '\n' + p1Emoji + '\n' + guessEmoji  + '\nPlay at BiblePivot(dot)com';
-        
+
+        return { hintsLine, p1Emoji, guessEmoji };
+    }
+    function buildShareText() {
+        const { hintsLine, p1Emoji, guessEmoji } = buildResultParts();
+        return hintsLine + '\n' + p1Emoji + '\n' + guessEmoji + '\nPlay at BiblePivot(dot)com';
+    }
+    function buildYouVersionShareText() {
+        const { hintsLine, p1Emoji, guessEmoji } = buildResultParts();
+        return 'I played at BiblePivot(dot)com ❤️' + '\n' + hintsLine + '\n' + p1Emoji + '\n' + guessEmoji;
     }
     function showSharePrompt() {
         document.getElementById('shareresult').textContent = buildShareText();
+        const cpBtn = document.getElementById('sharebtn-cp');
+        if (cpBtn) cpBtn.textContent = '📋 Copy to clipboard';
         document.getElementById('shareoverlay').style.display = 'flex';
     }
     function closeShare() {
@@ -2390,17 +2522,52 @@
     function closeSummary() {
         document.getElementById('summaryoverlay').style.display = 'none';
     }
+    function showToast(msg, duration) {
+        const t = document.getElementById('sum-toast');
+        if (!t) return;
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(function() {
+            t.classList.remove('show');
+        }, duration || 2500);
+    }
     (function() {
         // Summary panel buttons
         const sumClose = document.getElementById('sum-closebtn');
         if (sumClose) {
-            sumClose.addEventListener('touchend', function(e) { e.preventDefault(); closeSummary(); showSharePrompt(); });
-            sumClose.addEventListener('click', function(e) { closeSummary(); showSharePrompt(); });
+            sumClose.addEventListener('touchend', function(e) { e.preventDefault(); showSharePrompt(); });
+            sumClose.addEventListener('click', function(e) { showSharePrompt(); });
+        }
+        const sumDevo = document.getElementById('sum-devo-btn');
+        if (sumDevo) {
+            sumDevo.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('This feature is not yet active, pending release of new set of devotionals starting August 1. Please check back then.');
+            });
         }
         const sumNotNow = document.getElementById('sum-notnow');
         if (sumNotNow) {
             sumNotNow.addEventListener('touchend', function(e) { e.preventDefault(); closeSummary(); });
             sumNotNow.addEventListener('click', function(e) { closeSummary(); });
+        }
+        const sumVotd = document.getElementById('sum-votd-btn');
+        if (sumVotd) {
+            sumVotd.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = sumVotd.getAttribute('href');
+                const txt = buildYouVersionShareText();
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(txt).catch(function() {});
+                }
+                showToast('Copied your result — paste it in the comments on today\'s verse!', 4688);
+                setTimeout(function() {
+                    const win = window.open(url, '_blank');
+                    if (!win) {
+                        window.location.href = url;
+                    }
+                }, 900);
+            });
         }
 
         function addTapShare(id, fn) {
@@ -2429,18 +2596,15 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            setTimeout(closeShare, 2000);
         });
         addTapShare('sharebtn-em', function() {
             window.location.href = 'mailto:?subject=PIVOT&body=' + encodeURIComponent(buildShareText());
-            setTimeout(closeShare, 1000);
         });
         addTapShare('sharebtn-cp', function() {
             const txt = buildShareText();
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(txt).then(() => {
                     document.getElementById('sharebtn-cp').textContent = '✓ Copied!';
-                    setTimeout(closeShare, 1500);
                 });
             }
             else {
@@ -2456,7 +2620,6 @@
                 } catch (e) {}
                 document.body.removeChild(ta);
                 document.getElementById('sharebtn-cp').textContent = '✓ Copied!';
-                setTimeout(closeShare, 1500);
             }
         });
         addTapShare('sharebtn-cl', closeShare);

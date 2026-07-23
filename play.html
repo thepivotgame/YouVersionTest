@@ -645,6 +645,23 @@
         margin-bottom: 6px;
     }
 
+    .eresult-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+
+    .eresult-row .eemoji-sm {
+        font-size: 26px;
+        line-height: 1;
+    }
+
+    .eresult-row .eword {
+        margin: 0;
+    }
+
     .eword {
         color: #f9d976;
         font-size: 24px;
@@ -740,6 +757,7 @@
         padding: 16px;
     }
     #summarybox {
+        position: relative;
         background: #12122a;
         border: 1px solid #2e2e5a;
         border-radius: 16px;
@@ -751,6 +769,26 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         color: #e8e4d9;
     }
+    #summarybox .sum-close-x {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        color: #a8c8e8;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+    }
+    #summarybox .sum-close-x:hover { background: rgba(255,255,255,0.16); color: #ffffff; }
     #summarybox .sum-success {
         font-size: 22px;
         font-weight: bold;
@@ -1079,16 +1117,21 @@
             </div>
         </div>
         <div class="card result-win hidden" id="wincard">
-            <div class="eemoji">😇</div>
-            <h2 class="eword" id="winword"></h2>
-            <p style="color:#a8c8e8;margin:0 0 10px;font-size:13px;" id="wintext"></p>
+            <div class="eresult-row">
+                <span class="eemoji-sm">😇</span>
+                <h2 class="eword" id="winword"></h2>
+            </div>
+            <p style="color:#a8c8e8;margin:0 0 10px;font-size:16px;" id="wintext"></p>
             <div class="escore" id="winscore"></div>
         </div>
         <div class="card result-loss hidden" id="losscard">
-            <div class="eemoji">😔</div>
-            <h2 style="color:#e74c3c;margin:0 0 6px;font-size:20px;" id="lossword"></h2>
-            <p style="color:#a8c8e8;font-size:13px;" id="losstext"></p>
+            <div class="eresult-row">
+                <span class="eemoji-sm">😔</span>
+                <h2 style="color:#e74c3c;margin:0;font-size:20px;" id="lossword"></h2>
+            </div>
+            <p style="color:#a8c8e8;font-size:16px;" id="losstext"></p>
         </div>
+        <p class="hidden" id="view-share-link" style="text-align:center;font-family:-apple-system,sans-serif;font-size:13px;color:#f9d976;font-weight:bold;text-decoration:underline;cursor:pointer;touch-action:manipulation;margin:6px 0;">click here to view sharing window</p>
         <div id="votd-stats-panel"></div>
     </div>
 
@@ -1098,6 +1141,7 @@
     </canvas>
     <div id="summaryoverlay">
         <div id="summarybox">
+            <button class="sum-close-x" id="sum-close-x" aria-label="Close">&times;</button>
             <div class="sum-success" id="sum-heading">SUCCESS!</div>
             <div class="sum-target-label">Today's word was</div>
             <div class="sum-target" id="sum-target"></div>
@@ -1185,6 +1229,13 @@
     })();
 
     // ── PUZZLE ───────────────────────────────────────────────────────────────────
+    // Prevent the browser from silently restoring a previous scroll position on
+    // reload — that can fight our own scroll-to-bottom logic in showWin()/showLoss()
+    // (used both for a live finish and for redisplaying an already-played result).
+    if ('scrollRestoration' in history) {
+        try { history.scrollRestoration = 'manual'; } catch (e) {}
+    }
+
     // P is populated from Google Sheets at runtime by loadAndStart() below.
     // If the fetch fails, or there's no row for today's date, P stays null and
     // loadAndStart() shows the "no puzzle loaded" message instead of starting a
@@ -1613,6 +1664,7 @@
         foundKeys = new Set(),
         pivotCellKeys = new Set();
     let foundOrder = []; // tracks Part 1 words in the order they were found
+    let lastGameWon = null; // tracks whether the most recent game finish was a win, for reopening the summary popup
     let p1EventLog = [], // chronological log of Part 1 word-found / hint-used events, for score report line breaks
         p2EventLog = []; // chronological log of Part 2 guess-submitted / hint-used events, same purpose
     let selCells = [],
@@ -2397,11 +2449,31 @@
         }
     }
 
+    function scrollToPageBottom() {
+        // Wait two animation frames so any just-changed layout (cards being
+        // unhidden, stats panel being filled in) has actually been measured
+        // by the browser before we read scrollHeight — otherwise this can
+        // measure a too-short page and land partway down instead of at the
+        // true bottom.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const bottom = Math.max(
+                    document.body.scrollHeight,
+                    document.documentElement.scrollHeight
+                );
+                window.scrollTo({ top: bottom, behavior: 'smooth' });
+            });
+        });
+    }
+
     function showWin() {
         clearProgress();
         saveTodayResult(true);
+        lastGameWon = true;
         document.getElementById('actcard').style.display = 'none';
         document.getElementById('wincard').classList.remove('hidden');
+        const viewShareLinkWin = document.getElementById('view-share-link');
+        if (viewShareLinkWin) viewShareLinkWin.classList.remove('hidden');
         document.getElementById('winword').textContent = P.target;
         document.getElementById('wintext').textContent = P.winText;
         const hints = totalHintsUsed();
@@ -2424,22 +2496,18 @@
         document.getElementById('winscore').textContent = scoreMsg;
         
         setTimeout(() => {
-            document.getElementById('wincard').scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-            setTimeout(() => launchFireworks(3500), 600);
-            setTimeout(() => {
-                const panel = document.getElementById('votd-stats-panel');
-                if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 2200);
+            scrollToPageBottom();
+            setTimeout(() => { scrollToPageBottom(); launchFireworks(7000); }, 600);
         }, 300);
     }
     function showLoss() {
         clearProgress();
         saveTodayResult(false);
+        lastGameWon = false;
         document.getElementById('actcard').style.display = 'none';
         document.getElementById('losscard').classList.remove('hidden');
+        const viewShareLinkLoss = document.getElementById('view-share-link');
+        if (viewShareLinkLoss) viewShareLinkLoss.classList.remove('hidden');
         document.getElementById('lossword').textContent = 'The word was ' + P.target;
         const hints = totalHintsUsed();
         const wordsFound = foundOrder.length;
@@ -2448,15 +2516,8 @@
         renderStatsPanel(todayISO());
         document.getElementById('losstext').textContent = P.lossText + (hints > 0 ? ' (' + hints + (hints === 1 ? ' hint' : ' hints') + ' used)' : '');
         setTimeout(() => {
-            document.getElementById('losscard').scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-            setTimeout(() => launchRain(3500), 600);
-            setTimeout(() => {
-                const panel = document.getElementById('votd-stats-panel');
-                if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 2200);
+            scrollToPageBottom();
+            setTimeout(() => { scrollToPageBottom(); launchRain(7000); }, 600);
         }, 300);
     }
 
@@ -2860,6 +2921,16 @@
             sumNotNow.addEventListener('touchend', function(e) { e.preventDefault(); closeSummary(); });
             sumNotNow.addEventListener('click', function(e) { closeSummary(); });
         }
+        const sumCloseX = document.getElementById('sum-close-x');
+        if (sumCloseX) {
+            sumCloseX.addEventListener('touchend', function(e) { e.preventDefault(); closeSummary(); });
+            sumCloseX.addEventListener('click', function(e) { closeSummary(); });
+        }
+        const viewShareLink = document.getElementById('view-share-link');
+        if (viewShareLink) {
+            viewShareLink.addEventListener('touchend', function(e) { e.preventDefault(); showSummaryPanel(lastGameWon !== false); });
+            viewShareLink.addEventListener('click', function(e) { showSummaryPanel(lastGameWon !== false); });
+        }
         const sumVotd = document.getElementById('sum-votd-btn');
         if (sumVotd) {
             sumVotd.addEventListener('click', function(e) {
@@ -3044,6 +3115,13 @@
         p2EventLog = saved.p2EventLog || [];
         advancedMode = saved.advancedMode || false;
         gameOver = true;
+        // A completed/redisplayed game is obviously past the stage-2 unlock
+        // already. Without this, the window 'scroll' listener further down
+        // sees s2Initialised still at its default false and — as soon as our
+        // scroll-to-bottom logic fires a scroll event — calls goStage2()
+        // again, which resets the instrcard content and scrolls the page
+        // back up to it, undoing the scroll-to-bottom entirely.
+        s2Initialised = true;
 
         // Restore Part 1's board exactly as it was found, if we have it saved
         // (older saved results from before this existed won't have it).
